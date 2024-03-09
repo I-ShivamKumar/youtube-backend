@@ -270,7 +270,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     //TODO: delete old image - assignment
 
-    deleteOnCloudinary(req.user?.avatar)
+    deleteOnCloudinary(req.user?.avatar, "image")
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
@@ -304,7 +304,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     }
 
     //TODO: delete old image - assignment
-    deleteOnCloudinary(req.user?.coverImage)
+    deleteOnCloudinary(req.user?.coverImage, "image")
 
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)

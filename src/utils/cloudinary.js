@@ -26,7 +26,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
-const deleteOnCloudinary = async (url) => {
+const deleteOnCloudinary = async (url,resource_type) => {
     // Split the URL by '/'
     const parts = url?.split('/');
 
@@ -38,7 +38,7 @@ const deleteOnCloudinary = async (url) => {
 
     try {
         if (!id) return null;
-        const response = await cloudinary.api.delete_resources([id])
+        const response = await cloudinary.api.delete_resources([id], { "resource_type": resource_type })
         return response
     } catch (error) {
         return null;
