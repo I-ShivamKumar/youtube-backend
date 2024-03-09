@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary, deleteOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -21,6 +21,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
         throw new ApiError(500, "Something went wrong while generating the tokens")
     }
 }
+
 
 const registerUser = asyncHandler(async (req, res) => {
 
@@ -130,8 +131,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1
             }
         },
         {
@@ -172,6 +173,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Invalid refresh token")
         }
 
+        if (!user.refreshToken) {
+            throw new ApiError(401, "Invalid user from DB refresh token")
+        }
+
         if (incomingRefreshToken !== user?.refreshToken) {
             throw new ApiError(401, "refresh token is expired or invalid")
         }
@@ -203,7 +208,8 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
     const { currentPassword, newPassword } = req.body
 
-    const user = await User.findById(req.user._id)
+    const user = await User.findById(req.user?._id)
+
 
     const isPasswordCorrect = await user.isPasswordCorrect(currentPassword)
 
@@ -264,6 +270,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     //TODO: delete old image - assignment
 
+    deleteOnCloudinary(req.user?.avatar)
+
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
     if (!avatar.url) {
@@ -296,6 +304,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     }
 
     //TODO: delete old image - assignment
+    deleteOnCloudinary(req.user?.coverImage)
 
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
@@ -389,39 +398,39 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Channel not found")
     }
 
-    console.log("channel", channel);
+    // console.log("channel", channel);
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(200, channel[0], "Channel fetched successfully")
-    
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, channel[0], "Channel fetched successfully")
+
+        )
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
         {
-            $match:{
+            $match: {
                 _id: new mongoose.Types.ObjectId(req.user._id)
-            },      
+            },
         },
         {
-            $lookup:{
+            $lookup: {
                 from: "videos",
                 localField: "watchHistory",
                 foreignField: "_id",
                 as: "watchHistory",
-                pipeline:[
+                pipeline: [
                     {
-                        $lookup:{
+                        $lookup: {
                             from: "users",
                             localField: "owner",
                             foreignField: "_id",
                             as: "owner",
-                            pipeline:[
+                            pipeline: [
                                 {
-                                    $project:{
+                                    $project: {
                                         username: 1,
                                         fullname: 1,
                                         avatar: 1
@@ -431,8 +440,8 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                         }
                     },
                     {
-                        $addFields:{
-                            owner:{
+                        $addFields: {
+                            owner: {
                                 $first: "$owner"
                             }
                         }
@@ -443,10 +452,10 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     ])
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(200, user[0]?.watchHistory, "Watch history fetched successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, user[0]?.watchHistory, "Watch history fetched successfully")
+        )
 })
 
 
