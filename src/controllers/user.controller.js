@@ -35,7 +35,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     //Method 2 for the validation of the request body
     if ([username, email, fullname, password].some((field) => field?.trim() === "")) {
-        throw new ApiError(400, "All fields are required")``
+        throw new ApiError(400, "All fields are required")
     }
 
     const existedUser = await User.findOne({
@@ -472,5 +472,4 @@ export {
     updateUserCoverImage,
     getUserChannelProfile,
     getWatchHistory
-
 }
